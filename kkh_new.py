@@ -1,5 +1,5 @@
 from tkinter import *                       #(1-3)
-from tkinter import messagebox
+from tkinter import messagebox, font
 from tkinter.filedialog import *
 from tkinter.simpledialog import *
 import math
@@ -7,12 +7,6 @@ import os.path #파일 처리 / 다음부터는 복붙
 import cv2      #(3-3)
 import numpy as np
 from tkinter import messagebox, filedialog
-
-# 전역 변수부에 색상 정의 추가
-LIGHT_BLUE = '#E6F3FF'
-MEDIUM_BLUE = '#B3D9FF'
-DARK_BLUE = '#3399FF'
-TEXT_COLOR = '#003366'
 
 
 ## 함수 선언부
@@ -108,28 +102,38 @@ def OnDraw():
     canvas.pack(expand=1, anchor=CENTER)
 
 ## 메뉴 관련 함수 ##
+from tkinter import font
+
 def create_image_menu():
     global menu_frame
     for widget in menu_frame.winfo_children():
         widget.destroy()
 
-    Button(menu_frame, text="파일 열기", command=OnOpenDocument).pack(fill=X, padx=10, pady=5)
-    Button(menu_frame, text="동일 이미지", command=equalImage).pack(fill=X, padx=10, pady=5)
-    Button(menu_frame, text="밝게/어둡게", command=addImage).pack(fill=X, padx=10, pady=5)
-    Button(menu_frame, text="그레이스케일", command=grayImage).pack(fill=X, padx=10, pady=5)
-    Button(menu_frame, text="반전", command=reversedImage).pack(fill=X, padx=10, pady=5)
-    Button(menu_frame, text="확대/축소", command=zoomImage).pack(fill=X, padx=10, pady=5)
-    Button(menu_frame, text="이동", command=moveImage).pack(fill=X, padx=10, pady=5)
-    Button(menu_frame, text="엠보싱(RGB)", command=embossImageRGB).pack(fill=X, padx=10, pady=5)
+    button_font = font.Font(size=15, weight='bold')  # Adjust size and weight as needed
+
+    Button(menu_frame, text="파일 열기", command=OnOpenDocument, width=15, height=2, font=button_font).pack(fill=X, padx=10, pady=5)
+    Button(menu_frame, text="동일 이미지", command=equalImage, width=15, height=2, font=button_font).pack(fill=X, padx=10, pady=5)
+    Button(menu_frame, text="밝게/어둡게", command=addImage, width=15, height=2, font=button_font).pack(fill=X, padx=10, pady=5)
+    Button(menu_frame, text="그레이스케일", command=grayImage, width=15, height=2, font=button_font).pack(fill=X, padx=10, pady=5)
+    Button(menu_frame, text="반전", command=reversedImage, width=15, height=2, font=button_font).pack(fill=X, padx=10, pady=5)
+    Button(menu_frame, text="확대/축소", command=zoomImage, width=15, height=2, font=button_font).pack(fill=X, padx=10, pady=5)
+    Button(menu_frame, text="이동", command=moveImage, width=15, height=2, font=button_font).pack(fill=X, padx=10, pady=5)
+    Button(menu_frame, text="엠보싱(RGB)", command=embossImageRGB, width=15, height=2, font=button_font).pack(fill=X, padx=10, pady=5)
+
 def create_video_menu():
     global menu_frame
     for widget in menu_frame.winfo_children():
         widget.destroy()
 
-    Button(menu_frame, text="파일 열기", command=OnOpenDocument).pack(fill=X, padx=10, pady=5)
-    Button(menu_frame, text="재생", command=play_video).pack(fill=X, padx=10, pady=5)
-    Button(menu_frame, text="일시정지", command=pause_video).pack(fill=X, padx=10, pady=5)
-    Button(menu_frame, text="정지", command=stop_video).pack(fill=X, padx=10, pady=5)
+    button_font = font.Font(size=12, weight='bold')  # Adjust size and weight as needed
+
+    Button(menu_frame, text="파일 열기", command=OnOpenDocument, width=15, height=2, font=button_font).pack(fill=X, padx=10, pady=5)
+    Button(menu_frame, text="재생", command=play_video, width=15, height=2, font=button_font).pack(fill=X, padx=10, pady=5)
+    Button(menu_frame, text="일시정지", command=pause_video, width=15, height=2, font=button_font).pack(fill=X, padx=10, pady=5)
+    Button(menu_frame, text="정지", command=stop_video, width=15, height=2, font=button_font).pack(fill=X, padx=10, pady=5)
+    # Add more video-related buttons as needed
+
+
     # 비디오 관련 추가 버튼들...
 def create_initial_menu():
     global menu_frame
@@ -298,50 +302,46 @@ filename = None
 RGB, RR, GG, BB = 3, 0, 1, 2    #(4-5)
 
 ## 메인 코드부
-window = Tk()
-window.title("AI 영상인식 (Blue Theme)")
-window.geometry("800x600")
-window.configure(bg=LIGHT_BLUE)  # 메인 창 배경색 설정
+window = Tk()   #(1-2)
+window.title("AI 영상인식 (Alpha_1)")    #(1-5)
+window.geometry("800x600")  # *로 곱하면 오류
 
 # 전체 레이아웃을 위한 프레임
-main_frame = Frame(window, bg=LIGHT_BLUE)
+main_frame = Frame(window)
 main_frame.pack(fill=BOTH, expand=True)
 
 # 왼쪽 메뉴 프레임 (고정 너비)
-menu_frame = Frame(main_frame, width=200, bg=MEDIUM_BLUE)
+menu_frame = Frame(main_frame, width=200, bg='lightgray')
 menu_frame.pack(side=LEFT, fill=Y)
 menu_frame.pack_propagate(False)  # 프레임 크기 고정
 
 # 오른쪽 캔버스 프레임
-canvas_frame = Frame(main_frame, bg=DARK_BLUE)
+canvas_frame = Frame(main_frame)
 canvas_frame.pack(side=RIGHT, fill=BOTH, expand=True)
 
 # 상태바
-sbar = Label(window, text="상태바", bd=1, relief=SUNKEN, anchor=W, bg=MEDIUM_BLUE, fg=TEXT_COLOR)
+sbar = Label(window, text="상태바", bd=1, relief=SUNKEN, anchor=W)
 sbar.pack(side=BOTTOM, fill=X)
 
-# 버튼 스타일 함수
-def create_button(parent, text, command):
-    return Button(parent, text=text, command=command, bg=DARK_BLUE, fg='white', activebackground=MEDIUM_BLUE)
+# 초기 메뉴 버튼 생성
+create_initial_menu()
 
-# 메뉴 버튼 생성 함수 수정
-def create_initial_menu():
-    global menu_frame
-    create_button(menu_frame, "파일 열기", OnOpenDocument).pack(fill=X, padx=10, pady=5)
-    # 다른 버튼들도 같은 방식으로 추가...
+# 메뉴 프레임 생성
+menu_frame = Frame(window, width=200)
+menu_frame.pack(side=LEFT, fill=Y)
 
-# 메뉴바 스타일 설정
-mainMenu = Menu(window, bg=LIGHT_BLUE, fg=TEXT_COLOR)
+# 캔버스 프레임 생성
+canvas_frame = Frame(window)
+canvas_frame.pack(side=RIGHT, expand=True, fill=BOTH)
+
+# 파일 메뉴
+mainMenu = Menu(window)
 window.config(menu=mainMenu)
-fileMenu = Menu(mainMenu, tearoff=0, bg=LIGHT_BLUE, fg=TEXT_COLOR)
+fileMenu = Menu(mainMenu, tearoff=0)
 mainMenu.add_cascade(label='파일', menu=fileMenu)
 fileMenu.add_command(label='열기', command=OnOpenDocument)
 fileMenu.add_command(label='저장', command=OnSaveDocument)
 fileMenu.add_separator()
 fileMenu.add_command(label='종료', command=window.quit)
-
-# Canvas 생성 부분 수정 (OnDraw 함수 내에서)
-canvas = Canvas(canvas_frame, height=outH, width=outW, bg=LIGHT_BLUE)
-
 
 window.mainloop()

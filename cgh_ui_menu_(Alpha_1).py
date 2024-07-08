@@ -6,7 +6,7 @@ import math
 import os.path #파일 처리 / 다음부터는 복붙
 import cv2      #(3-3)
 import numpy as np
-import _pyinstaller_hooks_contrib
+from tkinter import messagebox, filedialog
 
 
 ## 함수 선언부
@@ -32,31 +32,36 @@ def OnSaveDocument() :  #(5-4)
 def OnCloseDocument() :  #(5-5)
     global window, canvas, paper, inImage, outImage     #(4-1) global로 전역변수 설정해주자!
     global inH, inW, outH, outW, inPhoto, outPhoto, filename
-def OnOpenDocument() :  #(2-2)
-    global window, canvas, paper, inImage, outImage     #(4-1) global로 전역변수 설정해주자!
-    global inH, inW, outH, outW, inPhoto, outPhoto, filename
-    filename = askopenfilename(parent=window,
-            filetypes=(("Color 이미지", "*.jpg;*.png;*.bim;*.tif"),("All files","*,*")) ) #(4-2)
-    # (5-1) 파일 열었다가 취소 눌렀을 때, 파이참에는 오류가 나지만, 실제로는 티도안남 굳이 이걸 만들어 놓을 필요는 없음.
-    if filename == '' or filename ==None:
+def OnOpenDocument():
+    global filename, inPhoto, inImage, outImage, inH, inW, outH, outW
+    filename = filedialog.askopenfilename(
+        filetypes=(("이미지/비디오 파일", "*.jpg;*.png;*.bmp;*.tif;*.mp4;*.avi;*.mov"),
+                   ("모든 파일", "*.*")))
+
+    if filename == '' or filename is None:
         return
-    # (4-3) 이미지 파일 --> OpenCV 객체
-    inPhoto = cv2.imread(filename)
-    # (4-4) 중요! 입력 이미지 크기를 파악
-    inH = inPhoto.shape[0]
-    inW = inPhoto.shape[1]
-    # (5-2) 상태바에 파일이름 넣어주자
-    sbar.configure(text=filename.split('/')[-1] + '  (' +str(inH) + 'x' + str(inW) + ')')  # filename.split('/') 는 리스트로 저장됨. 리스트 마지막
-    #messagebox.showinfo('',str(inH) + 'x' + str(inW))
-    # (4-6) 메모리 할당
-    inImage = malloc3D(inH, inW, RGB)
-    # (4-7) openCV 개체 --> 입력 이미지
-    for i in range(inH):
-        for k in range(inW):
-            inImage[RR][i][k] = inPhoto.item(i,k,BB)
-            inImage[GG][i][k] = inPhoto.item(i,k,GG)
-            inImage[BB][i][k] = inPhoto.item(i,k,RR)
-    equalImage()    #(4-8)
+
+    file_extension = filename.split('.')[-1].lower()
+
+    if file_extension in ['jpg', 'png', 'bmp', 'tif']:
+        inPhoto = cv2.imread(filename)
+        inH, inW = inPhoto.shape[:2]
+        inImage = malloc3D(inH, inW, RGB)
+
+        # OpenCV image to inImage
+        for i in range(inH):
+            for k in range(inW):
+                inImage[RR][i][k] = inPhoto.item(i, k, 2)
+                inImage[GG][i][k] = inPhoto.item(i, k, 1)
+                inImage[BB][i][k] = inPhoto.item(i, k, 0)
+
+        equalImage()  # This will create outImage and call OnDraw()
+        create_image_menu()
+    elif file_extension in ['mp4', 'avi', 'mov']:
+        # 비디오 처리 코드...
+        create_video_menu()
+
+    sbar.configure(text=filename.split('/')[-1])
 def equalImage() :  #(2-4)
     global window, canvas, paper, inImage, outImage     #(4-9) global로 전역변수 설정해주자!
     global inH, inW, outH, outW, inPhoto, outPhoto, filename
@@ -72,37 +77,60 @@ def equalImage() :  #(2-4)
                 outImage[rgb][i][k] = inImage[rgb][i][k]
     #########################
     OnDraw() # (4-13)
-def OnDraw():   # (4-14)
+def OnDraw():
     global window, canvas, paper, inImage, outImage
-    global inH, inW, outH, outW, inPhoto, outPhoto, filename
-    if canvas != None : # 기존에 화면 출력한적 있는지 확인 -> 있으면 떼어버리자
+    global inH, inW, outH, outW, inPhoto, outPhoto, filename, canvas_frame
+
+    if canvas != None:
         canvas.destroy()
-    window.geometry(str(outW) + 'x' + str(outH)) # window 창 크기 조절 복사 붙여넣어서 사용하자!
-    # (4-15) 캔버스, 페이퍼 생성 # 윈도우는 만들어뒀고, 칠판인 캔버스를 만들자, 그 후에 점찍을 수 있는 페이퍼 만들자!
-    canvas = Canvas(window, height=outH, width=outW)    # 칠판 준비하기
-    paper = PhotoImage(height=outH, width=outW)         # 칠판 크기같은 빈종이 준비하기
-    #canvas.create_image()
-    canvas.create_image((outW//2, outH//2), image = paper, state='normal') # 빈종이를 어디에 붙일래? 이제 점 찍을 차례
-   # # (4-16) 출력 메모리 --> 화면에 찍기
-   # for i in range(outH):
-   #     for k in range(outW):
-   #         r = outImage[RR][i][k]
-   #         g = outImage[GG][i][k]
-   #         b = outImage[BB][i][k]
-   #         paper.put('#%02x%02x%02x' % (r,g,b),(k,i))
-    rgbString = "" # 전체 화면에 찍을 내용을 메모리에 저장해 놓기
-    #(4-18) 위에 for문 주석처리하고 새로운 for문
+
+    canvas = Canvas(canvas_frame, height=outH, width=outW)
+    paper = PhotoImage(width=outW, height=outH)
+    canvas.create_image((outW//2, outH//2), image=paper, state='normal')
+
+    rgbString = ""
     for i in range(outH):
-        tmpString = "" #  한 줄에 해당하는 내용
+        tmpString = ""
         for k in range(outW):
             r = outImage[RR][i][k]
             g = outImage[GG][i][k]
             b = outImage[BB][i][k]
-            tmpString += '#%02x%02x%02x ' % (r,g,b)  #제일 뒤에 공백 1개
-        rgbString += '{' + tmpString + '} '  #제일 뒤에 공백 1개
+            tmpString += "#%02x%02x%02x " % (r, g, b)
+        rgbString += "{" + tmpString + "} "
     paper.put(rgbString)
-    # (4-17) 캔버스를 벽(winodw)에 붙이기
-    canvas.pack(expand=1, anchor=CENTER) # 벽 가운데 붙이기
+
+    canvas.pack(expand=1, anchor=CENTER)
+
+## 메뉴 관련 함수 ##
+def create_image_menu():
+    global menu_frame
+    for widget in menu_frame.winfo_children():
+        widget.destroy()
+
+    Button(menu_frame, text="파일 열기", command=OnOpenDocument).pack(fill=X, padx=10, pady=5)
+    Button(menu_frame, text="동일 이미지", command=equalImage).pack(fill=X, padx=10, pady=5)
+    Button(menu_frame, text="밝게/어둡게", command=addImage).pack(fill=X, padx=10, pady=5)
+    Button(menu_frame, text="그레이스케일", command=grayImage).pack(fill=X, padx=10, pady=5)
+    Button(menu_frame, text="반전", command=reversedImage).pack(fill=X, padx=10, pady=5)
+    Button(menu_frame, text="확대/축소", command=zoomImage).pack(fill=X, padx=10, pady=5)
+    Button(menu_frame, text="이동", command=moveImage).pack(fill=X, padx=10, pady=5)
+    Button(menu_frame, text="엠보싱(RGB)", command=embossImageRGB).pack(fill=X, padx=10, pady=5)
+def create_video_menu():
+    global menu_frame
+    for widget in menu_frame.winfo_children():
+        widget.destroy()
+
+    Button(menu_frame, text="파일 열기", command=OnOpenDocument).pack(fill=X, padx=10, pady=5)
+    Button(menu_frame, text="재생", command=play_video).pack(fill=X, padx=10, pady=5)
+    Button(menu_frame, text="일시정지", command=pause_video).pack(fill=X, padx=10, pady=5)
+    Button(menu_frame, text="정지", command=stop_video).pack(fill=X, padx=10, pady=5)
+    # 비디오 관련 추가 버튼들...
+def create_initial_menu():
+    global menu_frame
+    Button(menu_frame, text="파일 열기", command=OnOpenDocument).pack(fill=X, padx=10, pady=5)
+    # 다른 초기 버튼들을 여기에 추가할 수 있습니다.
+
+## 이미지 처리 함수
 def addImage() : #(5-3)
     global window, canvas, paper, inImage, outImage     #(4-9) global로 전역변수 설정해주자!
     global inH, inW, outH, outW, inPhoto, outPhoto, filename
@@ -265,37 +293,45 @@ RGB, RR, GG, BB = 3, 0, 1, 2    #(4-5)
 
 ## 메인 코드부
 window = Tk()   #(1-2)
-window.title("AI 영상인식 (Alpha_1")    #(1-5)
-window.geometry("400x200")  # *로 곱하면 오류
+window.title("AI 영상인식 (Alpha_1)")    #(1-5)
+window.geometry("800x600")  # *로 곱하면 오류
 
-## 상태바 생성   #(1-6)
+# 전체 레이아웃을 위한 프레임
+main_frame = Frame(window)
+main_frame.pack(fill=BOTH, expand=True)
+
+# 왼쪽 메뉴 프레임 (고정 너비)
+menu_frame = Frame(main_frame, width=200, bg='lightgray')
+menu_frame.pack(side=LEFT, fill=Y)
+menu_frame.pack_propagate(False)  # 프레임 크기 고정
+
+# 오른쪽 캔버스 프레임
+canvas_frame = Frame(main_frame)
+canvas_frame.pack(side=RIGHT, fill=BOTH, expand=True)
+
+# 상태바
 sbar = Label(window, text="상태바", bd=1, relief=SUNKEN, anchor=W)
 sbar.pack(side=BOTTOM, fill=X)
 
-## 메뉴 생성    #(2-1)
-mainMenu = Menu(window)     # 메뉴의 틀
-window.config(menu=mainMenu)
+# 초기 메뉴 버튼 생성
+create_initial_menu()
 
-fileMenu = Menu(mainMenu, tearoff=0)   # 상위 메뉴(파일)
+# 메뉴 프레임 생성
+menu_frame = Frame(window, width=200)
+menu_frame.pack(side=LEFT, fill=Y)
+
+# 캔버스 프레임 생성
+canvas_frame = Frame(window)
+canvas_frame.pack(side=RIGHT, expand=True, fill=BOTH)
+
+# 파일 메뉴
+mainMenu = Menu(window)
+window.config(menu=mainMenu)
+fileMenu = Menu(mainMenu, tearoff=0)
 mainMenu.add_cascade(label='파일', menu=fileMenu)
-fileMenu.add_command(label='열기', command=OnOpenDocument)    #(2-2)
+fileMenu.add_command(label='열기', command=OnOpenDocument)
 fileMenu.add_command(label='저장', command=OnSaveDocument)
 fileMenu.add_separator()
-fileMenu.add_command(label='종료', command=OnCloseDocument)
+fileMenu.add_command(label='종료', command=window.quit)
 
-image1Menu = Menu(mainMenu, tearoff=0)   # (2-3)
-mainMenu.add_cascade(label='화소점 처리', menu=image1Menu)
-image1Menu.add_command(label='동일 이미지', command=equalImage)  #(2-4)
-image1Menu.add_command(label='밝게/어둡게', command=addImage)
-image1Menu.add_command(label='그레이스케일', command=grayImage)
-image1Menu.add_command(label='반전', command=reversedImage)
-
-image2Menu = Menu(mainMenu, tearoff=0)
-mainMenu.add_cascade(label='기하학 처리', menu=image2Menu)
-image2Menu.add_command(label='확대/축소', command=zoomImage)
-image2Menu.add_command(label='이동', command=moveImage)
-
-image3Menu = Menu(mainMenu, tearoff=0)
-mainMenu.add_cascade(label='화소 영역 처리', menu=image3Menu)
-image3Menu.add_command(label='엠보싱(RGB)', command=embossImageRGB)
-window.mainloop()   #(1-4)
+window.mainloop()

@@ -956,6 +956,7 @@ window.geometry("400x200")  # *로 곱하면 오류
 sbar = Label(window, text="상태바", bd=1, relief=SUNKEN, anchor=W)
 sbar.pack(side=BOTTOM, fill=X)
 
+
 ## 메뉴 생성    #(2-1)
 mainMenu = Menu(window)     # 메뉴의 틀
 window.config(menu=mainMenu)

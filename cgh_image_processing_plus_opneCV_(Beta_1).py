@@ -6,7 +6,6 @@ import math
 import cv2      #(3-3)
 import numpy as np
 import os.path #파일 처리 / 다음부터는 복붙
-import _pyinstaller_hooks_contrib
 
 
 ## 함수 선언부

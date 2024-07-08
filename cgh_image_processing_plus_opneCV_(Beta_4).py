@@ -1,6 +1,7 @@
 '''
-Beta 3
-위에 뜨는 메뉴를 전부 왼쪽에만 뜨게 옮기기
+Beta 4
+사진 파일이 잘리는 문제 해결
+메인 코드부에 create_initial_menu() 로 인한 ui 구성 오류 해결
 '''
 
 from tkinter import *                       #(1-3)
@@ -38,10 +39,10 @@ def OnSaveDocument() :  #(5-4)
 def OnCloseDocument() :  #(5-5)
     global window, canvas, paper, inImage, outImage     #(4-1) global로 전역변수 설정해주자!
     global inH, inW, outH, outW, inPhoto, outPhoto, filename
-def OnOpenDocument():
+def OnOpenDocument():   # Beta 4 수정사항, steup_ui() 함수 추가
     global filename, inPhoto, inImage, outImage, inH, inW, outH, outW
     filename = filedialog.askopenfilename(
-        filetypes=(("이미지/비디오 파일", "*.jpg;*.png;*.bmp;*.tif;*.mp4;*.avi;*.mov"),
+        filetypes=(("이미지/비디오 파일", "*.jpg;*.png;*.bmp;*.tif;*.mp4;*.avi;*.mov;*.mkv"),
                    ("모든 파일", "*.*")))
 
     if filename == '' or filename is None:
@@ -66,7 +67,10 @@ def OnOpenDocument():
     elif file_extension in ['mp4', 'avi', 'mov']:
         # 비디오 처리 코드...
         create_video_menu()
-
+    else:
+        messagebox.showerror("Error", "지원하지 않는 파일 형식입니다.")
+        return
+    setup_ui()  # UI 재설정
     sbar.configure(text=filename.split('/')[-1])
 def equalImage() :  #(2-4)
     global window, canvas, paper, inImage, outImage     #(4-9) global로 전역변수 설정해주자!
@@ -87,27 +91,29 @@ def OnDraw():
     global window, canvas, paper, inImage, outImage
     global inH, inW, outH, outW, inPhoto, outPhoto, filename, canvas_frame
 
-    if canvas != None:
-        canvas.destroy()
+    # 기존 위젯들 제거
+    for widget in canvas_frame.winfo_children():
+        widget.destroy()
 
-    canvas = Canvas(canvas_frame, height=outH, width=outW)
+    # 캔버스 생성
+    canvas = Canvas(canvas_frame)
+    canvas.pack(side=LEFT, expand=True, fill=BOTH)
+
+    # 이미지 표시
     paper = PhotoImage(width=outW, height=outH)
-    #canvas.create_image((outW//2, outH//2), image=paper, state='normal')
-    canvas.create_image(0,0, image=paper, state='normal') # Beta_3 이미지 출력 위치 왼쪽 위로 수정
+    canvas.create_image(0, 0, image=paper, anchor=NW)
+    canvas.config(scrollregion=(0, 0, outW, outH))
 
     rgbString = ""
     for i in range(outH):
         tmpString = ""
         for k in range(outW):
-            r = outImage[RR][i][k]
-            g = outImage[GG][i][k]
-            b = outImage[BB][i][k]
+            r, g, b = outImage[RR][i][k], outImage[GG][i][k], outImage[BB][i][k]
             tmpString += "#%02x%02x%02x " % (r, g, b)
         rgbString += "{" + tmpString + "} "
     paper.put(rgbString)
 
-    # canvas.pack(expand=1, anchor=CENTER)
-    canvas.pack(expand=1, anchor=NW) # Beta_3 이미지 출력 위치 왼쪽 위로 수정
+    canvas.pack(side=LEFT, expand=True, fill=BOTH)
 def OnCV2OutImage():
     global window, canvas, paper, inImage, outImage
     global inH, inW, outH, outW, inPhoto, outPhoto, filename
@@ -224,6 +230,25 @@ def create_initial_menu():
     global menu_frame
     Button(menu_frame, text="파일 열기", command=OnOpenDocument).pack(fill=X, padx=10, pady=5)  # 첫 화면의 왼쪽 파일 열기 버튼 padx, pady : 여백
     # 다른 초기 버튼들을 여기에 추가할 수 있습니다.
+
+def setup_ui():  # Beta 4 수정사항, steup_ui() 함수 추가
+    global filename, menu_frame
+
+    # 기존 메뉴 항목 제거
+    for widget in menu_frame.winfo_children():
+        widget.destroy()
+
+    if filename is None or filename == '':
+        create_initial_menu()
+    else:
+        file_extension = filename.split('.')[-1].lower()
+        if file_extension in ['jpg', 'png', 'bmp', 'tif']:
+            create_image_menu()
+        elif file_extension in ['mp4', 'avi', 'mov', 'mkv']:
+            create_video_menu()
+        else:
+            create_initial_menu()
+
 
 ### 영상 처리 함수 ###
 def addImage() : #(5-3)
@@ -1048,7 +1073,6 @@ inH, inW, outH, outW = [0]*4
 inPhoto, outPhoto = None, None      #(3-2) OpenCV를 사용하려면 설치해야함(p38)
 filename = None
 RGB, RR, GG, BB = 3, 0, 1, 2    #(4-5)
-
 ## 메인 코드부
 window = Tk()   #(1-2)
 window.title("AI 영상인식 (Alpha_1)")    #(1-5)
@@ -1066,13 +1090,16 @@ canvas_frame.pack(side=RIGHT, fill=BOTH, expand=True)
 # 상태바
 sbar = Label(window, text="상태바", bd=1, relief=SUNKEN, anchor=W)
 sbar.pack(side=BOTTOM, fill=X)
-# 초기 메뉴 버튼 생성
-create_initial_menu()
-# 메뉴 프레임 생성
-menu_frame = Frame(window, width=200)
-menu_frame.pack(side=LEFT, fill=Y)
-# 캔버스 프레임 생성
-canvas_frame = Frame(window)
-canvas_frame.pack(side=RIGHT, expand=True, fill=BOTH)
+# # 초기 메뉴 버튼 생성 # Beta_4 파일 연 후에 초기메뉴를 없애기 위해 setup_ui로 묶음
+# create_initial_menu()
+# # 메뉴 프레임 생성
+# menu_frame = Frame(window, width=200)
+# menu_frame.pack(side=LEFT, fill=Y)
+# # 캔버스 프레임 생성
+# canvas_frame = Frame(window)
+# canvas_frame.pack(side=RIGHT, expand=True, fill=BOTH)
+
+# 초기 UI 설정
+setup_ui()   # Beta 4 수정사항, steup_ui() 함수 추가
 
 window.mainloop()   #(1-4)

@@ -45,7 +45,7 @@ while True:
         if not ret:
             break
 
-        frameCount += 1
+        frameCount += 10
         if frameCount % 5 == 0:
             frame = cv2.resize(frame, None,
                     fx=s_factor, fy=s_factor, interpolation=cv2.INTER_AREA)

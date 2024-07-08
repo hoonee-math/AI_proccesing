@@ -16,6 +16,8 @@ import os.path #파일 처리 / 다음부터는 복붙
 from PIL import Image, ImageTk  # Beta_5 필요한 lib import
 import threading                # Beta_5 필요한 lib import
 import time                     # Beta_5 필요한 lib import
+from ultralytics import YOLO    # Beta 6 Yolo lib import
+import cv2                      # Beta 6 Yolo lib import
 
 ## 함수 선언부 ##
 def malloc2D(h, w, initValue=0) :  #(6-5) 3차원배열을 미리 준비하자, default 파라미터를 사용하면 아주 편해요~
@@ -238,13 +240,16 @@ def create_video_menu():
     Button(menu_frame, text="재생", command=play_video).pack(fill=X, padx=10, pady=5)
     Button(menu_frame, text="일시정지", command=pause_video).pack(fill=X, padx=10, pady=5)
     Button(menu_frame, text="정지", command=stop_video).pack(fill=X, padx=10, pady=5)
+    Button(menu_frame, text="카메라 사용", command=use_camera).pack(fill=X, padx=10, pady=5) # Beta 6 캠 사용 버튼 추가
     # 비디오 관련 추가 버튼들...
 def create_initial_menu():
     global menu_frame
     Button(menu_frame, text="파일 열기", command=OnOpenDocument).pack(fill=X, padx=10, pady=5)  # 첫 화면의 왼쪽 파일 열기 버튼 padx, pady : 여백
-    Button(menu_frame, text="카메라 사용", command=create_video_menu).pack(fill=X, padx=10, pady=5)
+    Button(menu_frame, text="카메라 사용", command=start_camera).pack(fill=X, padx=10, pady=5)    # Beta 6 캠 사용 버튼 추가
     # 다른 초기 버튼들을 여기에 추가할 수 있습니다.
-
+def start_camera():  # Beta 6 캠 사용 버튼 추가, 초기 메뉴에서 바로 비디오 메뉴 버튼과 카메라 사용을 동시에 사용할수있는 버튼 추가
+    create_video_menu()
+    use_camera()
 def setup_ui():  # Beta 4 수정사항, steup_ui() 함수 추가
     global filename, menu_frame
 
@@ -262,7 +267,6 @@ def setup_ui():  # Beta 4 수정사항, steup_ui() 함수 추가
             create_video_menu()
         else:
             create_initial_menu()
-
 
 ### 영상 처리 함수 ###
 def addImage() : #(5-3)
@@ -1114,6 +1118,56 @@ def pause_video():
     global video_playing
     video_playing = False
 
+# Beta 6: 카메라 사용 함수 (kkh 함수와 합치려면 나중에 수정 필요)
+def use_camera(): # Beta 6 캠 사용 버튼 추가, kkh 코드와 연동해서 사용하기 위한 기초 작업
+    global video_capture, video_playing, canvas
+
+    if canvas:
+        canvas.destroy()
+
+    # 새 캔버스 생성
+    canvas = Canvas(canvas_frame)
+    canvas.pack(fill=BOTH, expand=True)
+
+    # YOLO 모델 로드
+    model = YOLO('yolov8n.pt')
+
+    # 카메라 열기
+    video_capture = cv2.VideoCapture(0)
+
+    if not video_capture.isOpened():
+        messagebox.showerror("에러", "카메라를 열 수 없습니다.")
+        return
+
+    video_playing = True
+
+    while video_playing:
+        ret, frame = video_capture.read()
+        if ret:
+            results = model.track(frame, persist=True)
+            frame_ = results[0].plot()
+
+            # OpenCV 이미지를 PIL 이미지로 변환
+            frame_rgb = cv2.cvtColor(frame_, cv2.COLOR_BGR2RGB)
+            pil_image = Image.fromarray(frame_rgb)
+
+            # PIL 이미지를 Tkinter PhotoImage로 변환
+            photo = ImageTk.PhotoImage(image=pil_image)
+
+            # 캔버스에 이미지 표시
+            canvas.delete("all")
+            canvas.config(width=pil_image.width, height=pil_image.height)
+            canvas.create_image(0, 0, image=photo, anchor=NW)
+            canvas.image = photo
+
+            window.update_idletasks()
+            window.update()
+
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+
+    video_capture.release()
+    cv2.destroyAllWindows()
 # 전역 변수부
 window, canvas, paper = None, None, None    #(1-1)
 inImage, outImage = [], []      #(3-1) unsigned char **m_inImage.... 영상처리를 위한 전역변수 선언!

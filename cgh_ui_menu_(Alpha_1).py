@@ -8,6 +8,7 @@ import os.path #파일 처리 / 다음부터는 복붙
 import cv2      #(3-3)
 import numpy as np
 from tkinter import messagebox, filedialog
+
 ## 함수 선언부
 def malloc2D(h, w, initValue=0) :  #(6-5) 3차원배열을 미리 준비하자, default 파라미터를 사용하면 아주 편해요~
     memory = [[initValue for _ in range(w)] for _ in range(h)]

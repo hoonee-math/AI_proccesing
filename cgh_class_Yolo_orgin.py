@@ -7,7 +7,7 @@ model = YOLO('yolov8n.pt')
 
 # load video
 video_path = 'images(DL)/zoopark.mp4'
-cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture(video_path)
 
 ret = True
 # read frames

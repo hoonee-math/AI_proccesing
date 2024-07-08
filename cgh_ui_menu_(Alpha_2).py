@@ -1,3 +1,7 @@
+'''
+메뉴를 예쁘게 만들어보기 위한 알파3
+'''
+
 from tkinter import *    #(1-3)
 from tkinter import ttk
 from tkinter import messagebox
@@ -8,6 +12,8 @@ import os.path #파일 처리 / 다음부터는 복붙
 import cv2      #(3-3)
 import numpy as np
 from tkinter import messagebox, filedialog
+# from PyQt5.QtWidgets import QMainWindow, QApplication, QToolButton   # https://velog.io/@hj8853/Python-PyQt5-%EA%B3%84%EC%82%B0%EA%B8%B0-%EB%A7%8C%EB%93%A4%EA%B8%B0
+
 ## 함수 선언부
 def malloc2D(h, w, initValue=0) :  #(6-5) 3차원배열을 미리 준비하자, default 파라미터를 사용하면 아주 편해요~
     memory = [[initValue for _ in range(w)] for _ in range(h)]

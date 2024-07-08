@@ -6,7 +6,6 @@ import math
 import cv2      #(3-3)
 import numpy as np
 import os.path #파일 처리 / 다음부터는 복붙
-import _pyinstaller_hooks_contrib
 
 
 ## 함수 선언부
@@ -906,9 +905,17 @@ def faceDetectCV():
     clf = cv2.CascadeClassifier("haarcascade_frontalface_alt.xml")     #(4-3)훈련된 모델을 줄테니까
     ## 얼굴 찾기(여러개 찾기 s)
     face_rects = clf.detectMultiScale(gray, 1.02, 5) # (4-2)찾아줘! 네모를 찾아줘, 여러개 위치 좌표를 찾아줌
-    ## 화면에 찾은 네모 그리기
-    for (x, y, w, h) in face_rects :
-        cv2.rectangle(outPhoto,(x,y),(x+w, y+h),(0,255,0),0)
+            # ## 화면에 찾은 네모 그리기 (삭제 후 if문 추가)
+            # for (x, y, w, h) in face_rects :
+            #     cv2.rectangle(outPhoto,(x,y),(x+w, y+h),(0,255,0),0)
+    if len(face_rects) == 0:
+        # 얼굴을 찾지 못한 경우
+        messagebox.showinfo("알림", "얼굴이 있는 이미지가 아닙니다.")
+    else:
+        # 얼굴을 찾은 경우
+        ## 화면에 찾은 네모 그리기
+        for (x, y, w, h) in face_rects:
+            cv2.rectangle(outPhoto, (x, y), (x + w, y + h), (0, 255, 0), 2)
     ##############
     OnCV2OutImage()
     OnDraw()
@@ -997,5 +1004,14 @@ openCVMenu.add_command(label='카툰 이미지', command=cartonImageCV)
 openCVMenu.add_separator()
 openCVMenu.add_command(label='얼굴인식', command=faceDetectCV)
 openCVMenu.add_command(label='코인식', command=noseDetectCV)
+caffe_Menu = Menu(mainMenu, tearoff=0)
+mainMenu.add_cascade(label='Caffe', menu=caffe_Menu)
+caffe_Menu.add_command(label='동일 이미지')
+caffe_Menu.add_command(label='Detector')
+yolo_Menu = Menu(mainMenu, tearoff=0)
+mainMenu.add_cascade(label='Yolo', menu=caffe_Menu)
+yolo_Menu.add_command(label='동일 이미지')
+yolo_Menu.add_command(label='Detector')
 
+openCVMenu = Menu(mainMenu, tearoff=0)
 window.mainloop()   #(1-4)

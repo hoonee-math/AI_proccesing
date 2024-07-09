@@ -1,7 +1,7 @@
 '''
-Beta 8
-kkh tp (beta 3) import 해서 기능 구현하기
-model yolo import
+Beta 9
+파일 열기 - 이미지 파일을 불러올 때 아무 사진이 나오지 않음 (단, 동일이미지, 반전을 비롯한 효과이미지는 정상 작동)
+
 '''
 
 from tkinter import *                       #(1-3)
@@ -43,6 +43,8 @@ def OnSaveDocument() :  #(5-4)
 def OnCloseDocument() :  #(5-5)
     global window, canvas, paper, inImage, outImage     #(4-1) global로 전역변수 설정해주자!
     global inH, inW, outH, outW, inPhoto, outPhoto, filename
+
+
 def OnOpenDocument():
     global filename, inPhoto, inImage, outImage, inH, inW, outH, outW, video_capture, canvas
     filename = filedialog.askopenfilename(
@@ -79,37 +81,37 @@ def OnOpenDocument():
         messagebox.showerror("Error", "지원하지 않는 파일 형식입니다.")
         return
 
-    # 비디오용 캔버스 생성
-    if canvas:
-        canvas.destroy()
-
-    if video_capture is not None and video_capture.isOpened():
-        canvas_width = int(video_capture.get(cv2.CAP_PROP_FRAME_WIDTH))
-        canvas_height = int(video_capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    else:
-        canvas_width = inW
-        canvas_height = inH
-
-    canvas = Canvas(canvas_frame, width=canvas_width, height=canvas_height)
-    canvas.pack()
+    # # 비디오용 캔버스 생성 Bdea 9에서 삭제
+    # if canvas:
+    #     canvas.destroy()
+    #
+    # if video_capture is not None and video_capture.isOpened():
+    #     canvas_width = int(video_capture.get(cv2.CAP_PROP_FRAME_WIDTH))
+    #     canvas_height = int(video_capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    # else:
+    #     canvas_width = inW
+    #     canvas_height = inH
+    #
+    # canvas = Canvas(canvas_frame, width=canvas_width, height=canvas_height)
+    # canvas.pack()
 
     setup_ui()  # UI 재설정
     sbar.configure(text=filename.split('/')[-1])
-def equalImage() :  #(2-4)
-    global window, canvas, paper, inImage, outImage     #(4-9) global로 전역변수 설정해주자!
+def equalImage() :
+    global window, canvas, paper, inImage, outImage     # global로 전역변수 설정해주자!
     global inH, inW, outH, outW, inPhoto, outPhoto, filename
-    # (4-10) 중요! 출력 이미지의 크기를 결정 ---> 알고리즘에 의존
+    # 중요! 출력 이미지의 크기를 결정 ---> 알고리즘에 의존
     outH = inH
     outW = inW
-    # (4-11) 메모리 할당
+    # 메모리 할당
     outImage = malloc3D(outH, outW, RGB)
-    ### (4-12) 진짜 영상처리 알고리즘 ###
+    ### 진짜 영상처리 알고리즘 ###
     for rgb in range(RGB):
         for i in range(inH):
             for k in range(inW):
                 outImage[rgb][i][k] = inImage[rgb][i][k]
     #########################
-    OnDraw() # (4-13)
+    OnDraw()
 def OnDraw():
     global window, canvas, paper, inImage, outImage
     global inH, inW, outH, outW, inPhoto, outPhoto, filename, canvas_frame

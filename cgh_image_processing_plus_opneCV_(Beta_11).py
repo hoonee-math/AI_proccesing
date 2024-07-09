@@ -1,7 +1,6 @@
 '''
-Beta 10
-노트북 카메라 사용 오류 해결 (beta 6 버전 웹캠 사용으로 되돌리기)
-use_camera() 함수 내용 수정
+Beta 11
+동영상 보다가 사진파일이 열리지 않는 문제 // 실패!!!
 '''
 
 from tkinter import *                       #(1-3)
@@ -43,13 +42,28 @@ def OnSaveDocument() :  #(5-4)
 def OnCloseDocument() :  #(5-5)
     global window, canvas, paper, inImage, outImage     #(4-1) global로 전역변수 설정해주자!
     global inH, inW, outH, outW, inPhoto, outPhoto, filename
+
+
 def OnOpenDocument():
-    global filename, inPhoto, inImage, outImage, inH, inW, outH, outW, video_capture, canvas
+    global filename, inPhoto, inImage, outImage, inH, inW, outH, outW, video_capture, canvas, video_playing
+
+    # 기존 비디오 재생 중지
+    video_playing = False
+
+    # 기존 비디오 캡처 객체 해제
+    if video_capture is not None:
+        video_capture.release()
+        video_capture = None
+
+    # 캔버스 초기화
+    if canvas:
+        canvas.delete("all")
+
     filename = filedialog.askopenfilename(
         filetypes=(("이미지/비디오 파일", "*.jpg;*.png;*.bmp;*.tif;*.mp4;*.avi;*.mov;*.mkv"),
                    ("모든 파일", "*.*")))
 
-    if filename == '' or filename is None:
+    if (filename == '' or filename is None):
         return
 
     file_extension = filename.split('.')[-1].lower()
@@ -68,36 +82,31 @@ def OnOpenDocument():
 
         equalImage()  # This will create outImage and call OnDraw()
         create_image_menu()
+        video_playing = False  # 이미지를 열었으므로 video_playing을 False로 설정
+        equalImage()
 
     elif file_extension in ['mp4', 'avi', 'mov', 'mkv']:
         video_capture = cv2.VideoCapture(filename)
-        # if not video_capture.isOpened():
-        #     messagebox.showerror("Error", "비디오 파일을 열 수 없습니다.")
-        #     return
-        if canvas:
-            canvas.destroy()
+        if not video_capture.isOpened():
+            messagebox.showerror("Error", "비디오 파일을 열 수 없습니다.")
+            return
 
-        if video_capture is not None and video_capture.isOpened():
-            canvas_width = int(video_capture.get(cv2.CAP_PROP_FRAME_WIDTH))
-            canvas_height = int(video_capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        else:
-            canvas_width = inW
-            canvas_height = inH
-
+        # 비디오용 새 캔버스 생성
+        canvas_width = int(video_capture.get(cv2.CAP_PROP_FRAME_WIDTH))
+        canvas_height = int(video_capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
         canvas = Canvas(canvas_frame, width=canvas_width, height=canvas_height)
         canvas.pack()
 
         play_video()
         create_video_menu()
+        video_playing = True  # 비디오를 열었으므로 video_playing을 True로 설정
     else:
         messagebox.showerror("Error", "지원하지 않는 파일 형식입니다.")
         return
 
-    # 비디오용 캔버스 생성 Bdea 9에서 삭제
-
-
     setup_ui()  # UI 재설정
     sbar.configure(text=filename.split('/')[-1])
+
 def equalImage() :
     global window, canvas, paper, inImage, outImage     # global로 전역변수 설정해주자!
     global inH, inW, outH, outW, inPhoto, outPhoto, filename
@@ -115,7 +124,11 @@ def equalImage() :
     OnDraw()
 def OnDraw():
     global window, canvas, paper, inImage, outImage
-    global inH, inW, outH, outW, inPhoto, outPhoto, filename, canvas_frame
+    global inH, inW, outH, outW, inPhoto, outPhoto, filename, canvas_frame, video_playing # Beta 11 , video_playing 전역변수 추가
+
+    # 동영상 재생 중이면 중지
+    if video_playing:
+        stop_video()
 
     # 기존 위젯들 제거
     for widget in canvas_frame.winfo_children():
@@ -140,6 +153,9 @@ def OnDraw():
     paper.put(rgbString)
 
     canvas.pack(side=LEFT, expand=True, fill=BOTH)
+    # 캔버스 크기 조정 및 업데이트
+    canvas.config(width=outW, height=outH)
+    canvas.update()
 def OnCV2OutImage():
     global window, canvas, paper, inImage, outImage
     global inH, inW, outH, outW, inPhoto, outPhoto, filename
@@ -1104,30 +1120,39 @@ def noseDetectCV():
 
 ### 비디오 재생 함수 ###
 def play_video():  # Beta 8에서 수정
-    global video_capture, video_playing, canvas
+    global video_capture, video_playing, canvas, video_thread
     if video_capture is None:
         return
     video_playing = True
-    threading.Thread(target=video_play_thread, daemon=True).start()
+    video_thread = threading.Thread(target=video_play_thread, daemon=True)
+    video_thread.start()
 def video_play_thread():
     global video_capture, video_playing, canvas
-    while video_playing:
-        ret, frame = video_capture.read()
-        if not ret:
-            video_capture.set(cv2.CAP_PROP_POS_FRAMES, 0)
-            continue
-        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        photo = ImageTk.PhotoImage(image=Image.fromarray(frame))
-        canvas.create_image(0, 0, image=photo, anchor=NW)
-        canvas.image = photo
-        window.update_idletasks()
-        window.update()
-        time.sleep(0.03)  # 약 30 FPS
+    try:
+        while video_playing and video_capture is not None:
+            ret, frame = video_capture.read()
+            if not ret:
+                video_capture.set(cv2.CAP_PROP_POS_FRAMES, 0)
+                continue
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            photo = ImageTk.PhotoImage(image=Image.fromarray(frame))
+            canvas.create_image(0, 0, image=photo, anchor=NW)
+            canvas.image = photo
+            window.update_idletasks()
+            window.update()
+            time.sleep(0.03)  # 약 30 FPS
+    except Exception as e:
+        print(f"비디오 재생 중 오류 발생: {e}")
+    finally:
+        video_playing = False
 def stop_video():
-    global video_capture, video_playing
+    global video_capture, video_playing, video_thread
     video_playing = False
+    if video_thread is not None and video_thread.is_alive():
+        video_thread.join()  # 스레드가 완전히 종료될 때까지 대기
     if video_capture is not None:
         video_capture.release()
+        video_capture = None
     canvas.delete("all")
 def pause_video():
     global video_playing
@@ -1302,6 +1327,7 @@ grayscale_enabled = False  # Beta 8에서 추가
 invert_enabled = False  # Beta 8에서 추가
 mirror_enabled = False  # Beta 8에서 추가
 hsv_emboss_enabled = False  # Beta 8에서 추가
+video_thread = None
 
 ## 메인 코드부 ##
 window = Tk()   #(1-2)

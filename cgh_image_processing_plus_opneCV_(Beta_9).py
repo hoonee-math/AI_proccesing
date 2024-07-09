@@ -73,27 +73,30 @@ def OnOpenDocument():
 
     elif file_extension in ['mp4', 'avi', 'mov', 'mkv']:
         video_capture = cv2.VideoCapture(filename)
-        if not video_capture.isOpened():
-            messagebox.showerror("Error", "비디오 파일을 열 수 없습니다.")
-            return
+        # if not video_capture.isOpened():
+        #     messagebox.showerror("Error", "비디오 파일을 열 수 없습니다.")
+        #     return
+        if canvas:
+            canvas.destroy()
+
+        if video_capture is not None and video_capture.isOpened():
+            canvas_width = int(video_capture.get(cv2.CAP_PROP_FRAME_WIDTH))
+            canvas_height = int(video_capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        else:
+            canvas_width = inW
+            canvas_height = inH
+
+        canvas = Canvas(canvas_frame, width=canvas_width, height=canvas_height)
+        canvas.pack()
+
+        play_video()
         create_video_menu()
     else:
         messagebox.showerror("Error", "지원하지 않는 파일 형식입니다.")
         return
 
-    # # 비디오용 캔버스 생성 Bdea 9에서 삭제
-    # if canvas:
-    #     canvas.destroy()
-    #
-    # if video_capture is not None and video_capture.isOpened():
-    #     canvas_width = int(video_capture.get(cv2.CAP_PROP_FRAME_WIDTH))
-    #     canvas_height = int(video_capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    # else:
-    #     canvas_width = inW
-    #     canvas_height = inH
-    #
-    # canvas = Canvas(canvas_frame, width=canvas_width, height=canvas_height)
-    # canvas.pack()
+    # 비디오용 캔버스 생성 Bdea 9에서 삭제
+
 
     setup_ui()  # UI 재설정
     sbar.configure(text=filename.split('/')[-1])

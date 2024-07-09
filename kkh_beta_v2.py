@@ -1,5 +1,5 @@
 #  특수 기능에 대한 설명 추가 / 줄바꿈
-
+# 한글/띄어쓰기/특수문자/괄호 사용금지, 언더바 가능
 from ultralytics import YOLO
 import cv2
 import numpy as np

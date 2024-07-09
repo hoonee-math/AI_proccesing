@@ -8,7 +8,8 @@ import time
 model = YOLO('yolov8n.pt')
 
 # load video
-cap = cv2.VideoCapture(0)
+video_path = 'test.mp4'
+cap = cv2.VideoCapture(video_path)
 
 # 전체화면 설정
 cv2.namedWindow('frame', cv2.WND_PROP_FULLSCREEN)
@@ -114,6 +115,9 @@ while ret:
     if invert_enabled: status_text.append("Invert: ON")
     if mirror_enabled: status_text.append("Mirror: ON")
     if hsv_emboss_enabled: status_text.append("HSV emboss: ON")
+
+
+
 
     # 여러 줄로 상태 표시
     y0, dy = 30, 40

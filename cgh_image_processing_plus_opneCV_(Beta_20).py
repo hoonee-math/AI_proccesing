@@ -1,10 +1,10 @@
 '''
->> Beta 18 객체수 파악 함수 추가
-object_counts 전역 변수 추가
-process_video 함수 수정
-update_object_count_display 함수 추가
-create_video_menu 수정
-toggle_yolo 수정
+>> Beta 20 초기화면 예쁘게 구성
+from tkinter import font as tkfont 추가
+create_initial_screen() 함수 수정
+switch_to_image_processing() 함수 수정
+switch_to_video_processing() 함수 수정
+메인 코드부 수정
 '''
 
 from tkinter import *                       #(1-3)
@@ -37,11 +37,11 @@ def create_initial_screen():
 
     # 배경 이미지 로드
     bg_image = Image.open("initial_page.png")
-    bg_image = bg_image.resize((1000, 600), Image.LANCZOS)  # ANTIALIAS 대신 LANCZOS 사용
+    bg_image = bg_image.resize((1200, 900), Image.LANCZOS)  # ANTIALIAS 대신 LANCZOS 사용
     bg_photo = ImageTk.PhotoImage(bg_image)
 
     # 배경 이미지를 표시할 캔버스 생성
-    bg_canvas = Canvas(initial_frame, width=1000, height=600)
+    bg_canvas = Canvas(initial_frame, width=1200, height=900)
     bg_canvas.pack(fill=BOTH, expand=True)
     bg_canvas.create_image(0, 0, image=bg_photo, anchor="nw")
     bg_canvas.image = bg_photo  # 참조 유지
@@ -1491,7 +1491,7 @@ tracked_ids = set() # Beta 18
 ## 메인 코드부 ##
 window = Tk()
 window.title("Photo & Video Tool")
-window.geometry("1000x600")
+window.geometry("1200x900")
 
 # 전체 레이아웃을 위한 프레임 (초기에는 숨김)
 main_frame = Frame(window)

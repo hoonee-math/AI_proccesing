@@ -1,6 +1,6 @@
 '''
 kkh_beta_v6 창 크기와 이름 변경
-
+1306줄, 1308줄 변경
 '''
 
 from tkinter import *                       #(1-3)
@@ -1304,8 +1304,8 @@ hsv_emboss_enabled = False  # Beta 8에서 추가
 
 ## 메인 코드부 ##
 window = Tk()   #(1-2)
-window.title("Photo & Video Tool")    #(1-5)
-window.geometry("1920x1080")  # *로 곱하면 오류
+window.title("Photo & Video Tool")    # 이름 변경
+window.geometry("1920x1080")  # 기존 800 600에서 확대 적용
 # 전체 레이아웃을 위한 프레임
 main_frame = Frame(window)
 main_frame.pack(fill=BOTH, expand=True)

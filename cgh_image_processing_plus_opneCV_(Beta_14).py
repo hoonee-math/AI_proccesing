@@ -1,5 +1,12 @@
 '''
 >> Beta 14 일반 동영상에도 open cv, yolo 적용
+use_camera 함수에서 if video_path 제거
+create_video_menu yolo 버튼 추가
+process_video 추가
+toggle_yolo 추가
+video_play_thread 간소화
+동영상 메뉴 구분선 추가
+
 '''
 
 from tkinter import *                       #(1-3)
@@ -241,24 +248,43 @@ def create_image_menu():
 
     yolo_Menu.menu.add_command(label='동일 이미지')
     yolo_Menu.menu.add_command(label='Detector') # #
+
+
 def create_video_menu():
     global menu_frame, video_path
     for widget in menu_frame.winfo_children():
         widget.destroy()
 
+    # 파일 및 재생 제어 섹션
     Button(menu_frame, text="파일 열기", command=OnOpenDocument).pack(fill=X, padx=10, pady=5)
     Button(menu_frame, text="재생", command=play_video).pack(fill=X, padx=10, pady=5)
     Button(menu_frame, text="일시정지", command=pause_video).pack(fill=X, padx=10, pady=5)
     Button(menu_frame, text="정지", command=stop_video).pack(fill=X, padx=10, pady=5)
+
+    # 구분선 추가
+    ttk.Separator(menu_frame, orient='horizontal').pack(fill=X, padx=5, pady=10)
+
+    # YOLO 및 카메라 섹션
+    Button(menu_frame, text="YOLO 적용", command=toggle_yolo).pack(fill=X, padx=10, pady=5)
     Button(menu_frame, text="카메라 사용", command=use_camera).pack(fill=X, padx=10, pady=5)
-    Button(menu_frame, text="모자이크", command=toggle_mosaic).pack(fill=X, padx=10, pady=5)
-    Button(menu_frame, text="블러", command=toggle_blur).pack(fill=X, padx=10, pady=5)
-    Button(menu_frame, text="선명화", command=toggle_sharpen).pack(fill=X, padx=10, pady=5)
-    Button(menu_frame, text="그레이스케일", command=toggle_grayscale).pack(fill=X, padx=10, pady=5)
-    Button(menu_frame, text="반전", command=toggle_invert).pack(fill=X, padx=10, pady=5)
-    Button(menu_frame, text="미러", command=toggle_mirror).pack(fill=X, padx=10, pady=5)
-    Button(menu_frame, text="HSV 엠보싱", command=toggle_hsv_emboss).pack(fill=X, padx=10, pady=5)
-    Button(menu_frame, text="YOLO 처리", command=process_video_with_yolo).pack(fill=X, padx=10, pady=5)  # Beta 14 새로운 버튼
+
+    # 구분선 추가
+    ttk.Separator(menu_frame, orient='horizontal').pack(fill=X, padx=5, pady=10)
+
+    # 이미지 효과 섹션
+    effects_frame = Frame(menu_frame)
+    effects_frame.pack(fill=X, padx=5, pady=5)
+
+    Label(effects_frame, text="이미지 효과", font=("Helvetica", 10, "bold")).pack(fill=X, pady=5)
+
+    Button(effects_frame, text="블러", command=toggle_blur).pack(fill=X, padx=5, pady=2)
+    Button(effects_frame, text="선명화", command=toggle_sharpen).pack(fill=X, padx=5, pady=2)
+    Button(effects_frame, text="그레이스케일", command=toggle_grayscale).pack(fill=X, padx=5, pady=2)
+    Button(effects_frame, text="반전", command=toggle_invert).pack(fill=X, padx=5, pady=2)
+    Button(effects_frame, text="미러", command=toggle_mirror).pack(fill=X, padx=5, pady=2)
+    Button(effects_frame, text="HSV 엠보싱", command=toggle_hsv_emboss).pack(fill=X, padx=5, pady=2)
+    Button(effects_frame, text="모자이크", command=toggle_mosaic).pack(fill=X, padx=5, pady=2)
+
 def create_initial_menu():
     global menu_frame
     Button(menu_frame, text="파일 열기", command=OnOpenDocument).pack(fill=X, padx=10, pady=5)  # 첫 화면의 왼쪽 파일 열기 버튼 padx, pady : 여백
@@ -1104,39 +1130,28 @@ def noseDetectCV():
 ### 비디오 재생 함수 ###
 def play_video():
     global video_capture, video_playing, canvas, video_thread
-    if video_capture is None or not video_capture.isOpened():
-        messagebox.showerror("Error", "비디오 파일을 열 수 없습니다.")
-        return
+    print("play_video 함수 시작")  # 디버그 출력
+    try:
+        if video_capture is None or not video_capture.isOpened():
+            print("비디오 캡처 객체 오류")  # 디버그 출력
+            messagebox.showerror("Error", "비디오 파일을 열 수 없습니다.")
+            return
 
-    # 비디오 캡처 객체 재설정
-    video_capture.set(cv2.CAP_PROP_POS_FRAMES, 0)
+        print(f"비디오 파일 경로: {video_path}")  # 디버그 출력
+        video_capture.set(cv2.CAP_PROP_POS_FRAMES, 0)
 
-    video_playing = True
-    video_thread = threading.Thread(target=video_play_thread, daemon=True)
-    video_thread.start()
-
+        video_playing = True
+        print("비디오 재생 스레드 시작")  # 디버그 출력
+        video_thread = threading.Thread(target=process_video, daemon=True)
+        video_thread.start()
+    except Exception as e:
+        print(f"오류 발생: {e}")  # 디버그 출력
+        messagebox.showerror("Error", f"비디오 재생 중 오류 발생: {e}")
 
 def video_play_thread():
-    global video_capture, video_playing, canvas
-    try:
-        while video_playing:
-            if video_capture is None or not video_capture.isOpened():
-                break
-            ret, frame = video_capture.read()
-            if not ret:
-                video_capture.set(cv2.CAP_PROP_POS_FRAMES, 0)
-                continue
-            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            photo = ImageTk.PhotoImage(image=Image.fromarray(frame))
-            canvas.create_image(0, 0, image=photo, anchor=NW)
-            canvas.image = photo
-            window.update_idletasks()
-            window.update()
-            time.sleep(0.03)  # 약 30 FPS
-    except Exception as e:
-        print(f"비디오 재생 중 오류 발생: {e}")
-    finally:
-        video_playing = False
+    global video_playing
+    video_playing = True
+    process_video()
 def stop_video():   # Beta 11
     global video_capture, video_playing, video_thread
     video_playing = False
@@ -1168,8 +1183,7 @@ def use_camera():   # Beta 8 에서 수정, process_video() 추가
     # YOLO 모델 로드
     model = YOLO('yolov8n.pt')
 
-    if video_path is None:
-        video_path = 0  # 카메라 사용
+    video_path = 0  # 카메라 사용
 
     video_capture = cv2.VideoCapture(video_path)
 
@@ -1180,92 +1194,59 @@ def use_camera():   # Beta 8 에서 수정, process_video() 추가
     video_playing = True
 
     process_video()
-def process_video():    # Beta 8 에서 수정, process_video() 추가
-    global video_capture, video_playing, canvas
+# process_video 함수 수정
+def process_video():
+    global video_capture, video_playing, canvas, model, yolo_enabled
 
-    while video_playing:
-        if not paused:
-            ret, frame = video_capture.read()
-            if not ret:
-                video_capture.set(cv2.CAP_PROP_POS_FRAMES, 0)
-                continue
-
-        # 프레임 처리
-        results = model.track(frame, persist=True)
-        frame_ = results[0].plot()
-
-        if hsv_emboss_enabled:
-            frame_ = apply_hsv_emboss(frame_)
-        if mosaic_enabled:
-            frame_ = apply_mosaic_to_persons(frame_, results)
-        if blur_enabled:
-            frame_ = apply_blur(frame_)
-        if sharpen_enabled:
-            frame_ = apply_sharpen(frame_)
-        if grayscale_enabled:
-            frame_ = apply_grayscale(frame_)
-        if invert_enabled:
-            frame_ = apply_invert(frame_)
-        if mirror_enabled:
-            frame_ = apply_mirror(frame_)
-
-        # 상태 표시
-        frame_ = add_status_text(frame_)
-
-        # 화면에 표시
-        frame_rgb = cv2.cvtColor(frame_, cv2.COLOR_BGR2RGB)
-        photo = ImageTk.PhotoImage(image=Image.fromarray(frame_rgb))
-        canvas.delete("all")
-        canvas.config(width=frame_.shape[1], height=frame_.shape[0])
-        canvas.create_image(0, 0, image=photo, anchor=NW)
-        canvas.image = photo
-
-        window.update_idletasks()
-        window.update()
-
-    video_capture.release()
-def process_video_with_yolo():
-    global video_path, video_capture, video_playing, canvas
-
-    if video_path is None or video_capture is None:
-        messagebox.showerror("Error", "비디오 파일이 선택되지 않았습니다.")
+    if not video_playing:
         return
 
-    # YOLO 모델 로드
-    model = YOLO('yolov8n.pt')
+    ret, frame = video_capture.read()
+    if not ret:
+        video_capture.set(cv2.CAP_PROP_POS_FRAMES, 0)
+        window.after(30, process_video)
+        return
 
-    # 비디오 캡처 객체 재설정
-    video_capture.set(cv2.CAP_PROP_POS_FRAMES, 0)
-
-    video_playing = True
-
-    while video_playing:
-        ret, frame = video_capture.read()
-        if not ret:
-            video_capture.set(cv2.CAP_PROP_POS_FRAMES, 0)
-            continue
-
-        # YOLO 모델로 프레임 처리
+    # YOLO 모델 적용 (조건부)
+    if yolo_enabled:
         results = model.track(frame, persist=True)
         frame_ = results[0].plot()
+    else:
+        frame_ = frame
 
-        # BGR에서 RGB로 변환
-        frame_rgb = cv2.cvtColor(frame_, cv2.COLOR_BGR2RGB)
+    # 효과 적용 (기존 코드와 동일)
+    if hsv_emboss_enabled:
+        frame_ = apply_hsv_emboss(frame_)
+    if mosaic_enabled and yolo_enabled:
+        frame_ = apply_mosaic_to_persons(frame_, results)
+    if blur_enabled:
+        frame_ = apply_blur(frame_)
+    if sharpen_enabled:
+        frame_ = apply_sharpen(frame_)
+    if grayscale_enabled:
+        frame_ = apply_grayscale(frame_)
+    if invert_enabled:
+        frame_ = apply_invert(frame_)
+    if mirror_enabled:
+        frame_ = apply_mirror(frame_)
 
-        # 캔버스에 이미지 표시
-        photo = ImageTk.PhotoImage(image=Image.fromarray(frame_rgb))
-        canvas.delete("all")
-        canvas.config(width=frame_.shape[1], height=frame_.shape[0])
-        canvas.create_image(0, 0, image=photo, anchor=NW)
-        canvas.image = photo
+    # 상태 표시
+    frame_ = add_status_text(frame_)
 
-        window.update_idletasks()
-        window.update()
+    # 화면에 표시
+    frame_rgb = cv2.cvtColor(frame_, cv2.COLOR_BGR2RGB)
+    photo = ImageTk.PhotoImage(image=Image.fromarray(frame_rgb))
 
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
+    if not hasattr(canvas, 'image_on_canvas'):
+        canvas.image_on_canvas = canvas.create_image(0, 0, image=photo, anchor=NW)
+    else:
+        canvas.itemconfig(canvas.image_on_canvas, image=photo)
 
-    video_playing = False
+    canvas.image = photo
+    canvas.config(width=frame_.shape[1], height=frame_.shape[0])
+
+    window.update_idletasks()
+    window.after(30, process_video)  # 약 33ms 후에 다음 프레임 처리 (30 FPS에 근접)
 
 ### yolo 적용 kkh 함수 추가 ###  Beta 8에서 추가
 def apply_hsv_emboss(image):
@@ -1347,7 +1328,10 @@ def toggle_mirror():
 def toggle_hsv_emboss():
     global hsv_emboss_enabled
     hsv_emboss_enabled = not hsv_emboss_enabled
-
+# Beta YOLO 토글 함수 추가
+def toggle_yolo():
+    global yolo_enabled
+    yolo_enabled = not yolo_enabled
 ## 전역 변수부 ##
 window, canvas, paper = None, None, None    #(1-1)
 inImage, outImage = [], []      #(3-1) unsigned char **m_inImage.... 영상처리를 위한 전역변수 선언!
@@ -1369,12 +1353,15 @@ invert_enabled = False  # Beta 8에서 추가
 mirror_enabled = False  # Beta 8에서 추가
 hsv_emboss_enabled = False  # Beta 8에서 추가
 video_thread = None  # Beta 11 비디오 재생 스레드를 관리하기 위한 변수
+yolo_enabled = False  # YOLO 활성화 상태를 위한 변수 추가
+
+
 
 
 ## 메인 코드부 ##
 window = Tk()   #(1-2)
 window.title("Photo & Video Tool")    # 이름 변경
-window.geometry("1920x1080")  # 기존 800 600에서 확대 적용
+window.geometry("1000x600")  # 기존 800 600에서 확대 적용
 # 전체 레이아웃을 위한 프레임
 main_frame = Frame(window)
 main_frame.pack(fill=BOTH, expand=True)

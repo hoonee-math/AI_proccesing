@@ -24,7 +24,6 @@ from tkinter import font as tkfont
 import logging
 from tkinter import Entry, StringVar, Label     # Beta 28 에서 경고를 효과를 위해 추가
 
-
 ## 함수 선언부 ##
 def create_button(canvas, x, y, text, command, bg_image):
     # 배경 이미지에서 버튼 영역 추출
@@ -206,8 +205,6 @@ def OnOpenDocument():
 
     setup_ui()  # UI 재설정
     sbar.configure(text=filename.split('/')[-1])
-
-
 def OnDraw():
     global window, canvas, paper, inImage, outImage
     global inH, inW, outH, outW, inPhoto, outPhoto, filename, canvas_frame
@@ -339,7 +336,6 @@ def reset_all_variables():  # Beta 24 모든 전역 변수를 초기화하는 �
     # YOLO 버튼 텍스트 업데이트
     update_yolo_button_text()
 
-
 ### 비디오 재생 함수 ###
 def play_video():
     global video_capture, video_playing, canvas, video_thread
@@ -434,8 +430,6 @@ def use_camera():   # Beta 24 비디오 재생 중 영상으로 넘어올때 발
 def start_camera():  # Beta 6 캠 사용 버튼 추가, 초기 메뉴에서 바로 비디오 메뉴 버튼과 카메라 사용을 동시에 사용할수있는 버튼 추가
     create_video_menu()
     use_camera()
-
-
 def process_video():
     global video_capture, video_playing, canvas, model, yolo_enabled, canvas_frame, object_counts, tracked_ids, sbar
     global object_threshold, count_threshold, warning_active, warning_toggle
@@ -732,8 +726,6 @@ def create_image_menu():
 
     # 구분선 추가
     ttk.Separator(menu_frame, orient='horizontal').pack(fill=X, padx=5, pady=10)
-
-
 def toggle_submenu(frame, button):  # beta 27에서 defalut 추가를 위해 전면 수정
     global selected_main_menu
     default_font = ('TkDefaultFont', 8)
@@ -809,8 +801,7 @@ def create_video_menu():
         ("그레이스케일", toggle_grayscale),
         ("반전", toggle_invert),
         ("미러", toggle_mirror),
-        ("HSV 엠보싱", toggle_hsv_emboss),
-        ("모자이크", toggle_mosaic)
+        ("HSV 엠보싱", toggle_hsv_emboss)
     ]
 
     for text, command in effect_buttons:
@@ -825,6 +816,11 @@ def create_video_menu():
     yolo_button = Button(menu_frame, text="YOLO 적용" if not yolo_enabled else "YOLO 비활성화")
     yolo_button.config(command=lambda: toggle_button_state(yolo_button, toggle_yolo))
     yolo_button.pack(fill=X, padx=10, pady=5)
+
+    # 모자이크 버튼 추가
+    mosaic_button = Button(menu_frame, text="모자이크")
+    mosaic_button.config(command=lambda: toggle_button_state(mosaic_button, toggle_mosaic))
+    mosaic_button.pack(fill=X, padx=10, pady=5)
 
     # 구분선 추가
     ttk.Separator(menu_frame, orient='horizontal').pack(fill=X, padx=5, pady=10)
@@ -845,8 +841,6 @@ def create_video_menu():
     # 객체 카운트 표시 레이블
     object_count_label = Label(menu_frame, text="YOLO 비활성화", justify=LEFT)
     object_count_label.pack(side=BOTTOM, fill=X)
-
-
 def monitor_thresholds():   # Beta 28 에서 경고를 효과를 위해 추가, creat_video_menu()에서 사용
     global object_threshold, count_threshold
 
